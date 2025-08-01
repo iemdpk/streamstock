@@ -2,6 +2,24 @@ import streamlit as st
 import pandas as pd
 import requests
 
+# --- Indian number formatter ---
+def format_inr(value):
+    try:
+        num = float(value)
+        if num < 1e5:
+            return f"{num:,.2f}"
+        int_part, dec_part = str(f"{num:.2f}").split(".")
+        last3 = int_part[-3:]
+        rest = int_part[:-3]
+        if rest != "":
+            rest = ",".join([rest[max(i - 2, 0):i] for i in range(len(rest), 0, -2)][::-1])
+            formatted = rest + "," + last3
+        else:
+            formatted = last3
+        return f"₹ {formatted}.{dec_part}"
+    except:
+        return "₹ 0.00"
+
 # --- Fetch data from CoinGecko API ---
 @st.cache_data(ttl=300)
 def load_data():
@@ -73,14 +91,28 @@ if mcap_change_24h == "Positive":
 elif mcap_change_24h == "Negative":
     filtered_df = filtered_df[filtered_df["market_cap_change_percentage_24h"] < 0]
 
+# --- Format numbers ---
+filtered_df["formatted_price"] = filtered_df["current_price"].apply(format_inr)
+filtered_df["formatted_market_cap"] = filtered_df["market_cap"].apply(format_inr)
+
 # --- Show Data ---
 st.subheader(f"📊 Showing {len(filtered_df)} coins")
 st.dataframe(
     filtered_df[[
-        "market_cap_rank","name", "symbol", "current_price","price_change_percentage_1h_in_currency",
+        "market_cap_rank", "name", "symbol", "formatted_price", 
+        "price_change_percentage_1h_in_currency",
         "price_change_percentage_24h",
-        "market_cap",
+        "formatted_market_cap",
         "market_cap_change_percentage_24h"
-    ]].sort_values(by="market_cap_rank").reset_index(drop=True),
+    ]].rename(columns={
+        "market_cap_rank": "Rank",
+        "name": "Name",
+        "symbol": "Symbol",
+        "formatted_price": "Current Price (INR)",
+        "price_change_percentage_1h_in_currency": "1h Change (%)",
+        "price_change_percentage_24h": "24h Change (%)",
+        "formatted_market_cap": "Market Cap (INR)",
+        "market_cap_change_percentage_24h": "MCap Change 24h (%)"
+    }),
     use_container_width=True
 )
