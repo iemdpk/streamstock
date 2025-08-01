@@ -53,39 +53,43 @@ rank_input = st.sidebar.number_input(
     min_value=1, max_value=max_rank, value=max_rank
 )
 
-# 2️⃣ Current Price (INR) Range
-min_price = float(df["current_price"].min())
-max_price = float(df["current_price"].max())
-price_range = st.sidebar.slider(
-    "2️⃣ Current Price Range (INR)", 
-    min_value=min_price, 
-    max_value=max_price, 
-    value=(min_price, max_price)
-)
+# --- Initial filter only by rank ---
+filtered_df = df[df["market_cap_rank"] <= rank_input]
 
-# --- Apply rank + price filter first ---
-filtered_df = df[
-    (df["market_cap_rank"] <= rank_input) &
-    (df["current_price"] >= price_range[0]) &
-    (df["current_price"] <= price_range[1])
-]
+# 2️⃣ Current Price ≥ (Min)
+price_min_input = st.sidebar.text_input("2️⃣ Current Price ≥ (INR)", "")
+if price_min_input.strip():
+    try:
+        min_val = float(price_min_input.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["current_price"] >= min_val]
+    except ValueError:
+        st.sidebar.error("❌ Enter a valid number for min price")
 
-# 3️⃣ Price Change 1h %
-change_1h = st.sidebar.selectbox("3️⃣ 1h Price % Change", ["All", "Positive", "Negative"])
+# 3️⃣ Current Price ≤ (Max)
+price_max_input = st.sidebar.text_input("3️⃣ Current Price ≤ (INR)", "")
+if price_max_input.strip():
+    try:
+        max_val = float(price_max_input.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["current_price"] <= max_val]
+    except ValueError:
+        st.sidebar.error("❌ Enter a valid number for max price")
+
+# 4️⃣ Price Change 1h %
+change_1h = st.sidebar.selectbox("4️⃣ 1h Price % Change", ["All", "Positive", "Negative"])
 if change_1h == "Positive":
     filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] > 0]
 elif change_1h == "Negative":
     filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] < 0]
 
-# 4️⃣ Price Change 24h %
-change_24h = st.sidebar.selectbox("4️⃣ 24h Price % Change", ["All", "Positive", "Negative"])
+# 5️⃣ Price Change 24h %
+change_24h = st.sidebar.selectbox("5️⃣ 24h Price % Change", ["All", "Positive", "Negative"])
 if change_24h == "Positive":
     filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] > 0]
 elif change_24h == "Negative":
     filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] < 0]
 
-# 5️⃣ Market Cap Change 24h %
-mcap_change_24h = st.sidebar.selectbox("5️⃣ Market Cap % Change (24h)", ["All", "Positive", "Negative"])
+# 6️⃣ Market Cap Change 24h %
+mcap_change_24h = st.sidebar.selectbox("6️⃣ Market Cap % Change (24h)", ["All", "Positive", "Negative"])
 if mcap_change_24h == "Positive":
     filtered_df = filtered_df[filtered_df["market_cap_change_percentage_24h"] > 0]
 elif mcap_change_24h == "Negative":
@@ -99,14 +103,14 @@ filtered_df["formatted_market_cap"] = filtered_df["market_cap"].apply(format_inr
 st.subheader(f"📊 Showing {len(filtered_df)} coins")
 st.dataframe(
     filtered_df[[
-        "market_cap_rank", "name", "symbol", "formatted_price", 
+        "market_cap_rank", "symbol", 
         "price_change_percentage_1h_in_currency",
         "price_change_percentage_24h",
+        "formatted_price",
         "formatted_market_cap",
         "market_cap_change_percentage_24h"
     ]].rename(columns={
         "market_cap_rank": "Rank",
-        "name": "Name",
         "symbol": "Symbol",
         "formatted_price": "Current Price (INR)",
         "price_change_percentage_1h_in_currency": "1h Change (%)",
