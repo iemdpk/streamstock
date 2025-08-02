@@ -20,6 +20,13 @@ def format_inr(value):
     except:
         return "₹ 0.00"
 
+# --- Get number of digits before decimal ---
+def get_length_before_decimal(value):
+    try:
+        return len(str(int(float(value))))
+    except:
+        return 0
+
 # --- Fetch data from CoinGecko API ---
 @st.cache_data(ttl=300)
 def load_data():
@@ -94,10 +101,11 @@ filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_200d_in_cur
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_1y_in_currency", "🔟 1y")
 filtered_df = apply_pct_filter(filtered_df, "market_cap_change_percentage_24h", "🧮 MCap 24h")
 
-# --- Format numbers safely ---
+# --- Format numbers and compute market cap length ---
 filtered_df = filtered_df.copy()
 filtered_df["formatted_price"] = filtered_df["current_price"].apply(format_inr)
 filtered_df["formatted_market_cap"] = filtered_df["market_cap"].apply(format_inr)
+filtered_df["market_cap_length"] = filtered_df["market_cap"].apply(get_length_before_decimal)
 
 # --- Show Data ---
 st.subheader(f"📊 Showing {len(filtered_df)} coins")
@@ -106,6 +114,7 @@ st.dataframe(
         "market_cap_rank", "name", "symbol",
         "price_change_percentage_1h_in_currency",
         "price_change_percentage_24h_in_currency",
+        "market_cap_length",  # <- Added here
         "formatted_price",
         "formatted_market_cap",
         "market_cap_change_percentage_24h"
@@ -115,6 +124,7 @@ st.dataframe(
         "symbol": "Symbol",
         "price_change_percentage_1h_in_currency": "1h Change (%)",
         "price_change_percentage_24h_in_currency": "24h Change (%)",
+        "market_cap_length": "Digits in Market Cap",
         "formatted_price": "Current Price (INR)",
         "formatted_market_cap": "Market Cap (INR)",
         "market_cap_change_percentage_24h": "MCap Change 24h (%)"
