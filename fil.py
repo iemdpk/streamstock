@@ -4,6 +4,8 @@ import requests
 import plotly.express as px
 from pymongo import MongoClient
 import certifi
+from datetime import datetime
+import pytz
 
 # --- MongoDB Load ---
 @st.cache_data(ttl=300)
@@ -11,7 +13,7 @@ def load_mongo_data():
     client = MongoClient("mongodb+srv://iemdpk:Imback2play@localserver.cwqbg.mongodb.net/?retryWrites=true&w=majority", tlsCAFile=certifi.where())
     db = client["crypto"]
     collection = db["snapshots"]
-    return pd.DataFrame(list(collection.find({}, {"id": 1, "price_change_percentage_1h_in_currency": 1, "_id": 0})))
+    return pd.DataFrame(list(collection.find({}, {"id": 1, "price_change_percentage_1h_in_currency": 1, "_id": 0,"timestamp":1})))
 
 # --- INR Formatting ---
 def format_inr(value):
@@ -83,7 +85,7 @@ df = load_data()
 mongo_df = load_mongo_data()
 
 st.set_page_config(page_title="Crypto Dashboard", layout="wide")
-st.title("🪙 Crypto Dashboard - CoinGecko INR")
+st.title("🪙 Crypto Dashboard")
 
 if df.empty or mongo_df.empty:
     st.error("❌ Failed to load data from CoinGecko or MongoDB")
@@ -104,6 +106,20 @@ st.markdown(f"""
 - DB Avg: `{mongo_avg:.2f}%`
 - **{sentiment}**
 """)
+raw_ts = mongo_df["timestamp"].iloc[0]  # or .max() if needed
+
+# Convert to datetime object with proper timezone
+try:
+    # If it's already a datetime object (not string), this will still work
+    dt = pd.to_datetime(raw_ts).tz_convert("Asia/Kolkata")
+except:
+    dt = pd.to_datetime(raw_ts).tz_localize("UTC").tz_convert("Asia/Kolkata")
+
+# Format to 'Month Day, Year – HH:MM:SS AM/PM IST'
+formatted_ts = dt.strftime("%B %-d, %Y – %I:%M:%S %p IST")
+
+# Show in Streamlit
+st.markdown(f"🕒 **Last API Update:** `{formatted_ts}`")
 
 # --- Sidebar Filters ---
 st.sidebar.header("🔍 Filters")
