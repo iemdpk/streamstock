@@ -124,7 +124,7 @@ st.markdown(f"🕒 **Last API Update:** `{formatted_ts}`")
 # --- Sidebar Filters ---
 st.sidebar.header("🔍 Filters")
 max_rank = int(df["market_cap_rank"].dropna().max())
-rank_input = st.sidebar.number_input("Market Cap Rank ≤", 1, max_rank, min(150, max_rank))
+rank_input = st.sidebar.number_input("Market Cap Rank ≤", 1, max_rank, min(200, max_rank))
 filtered_df = df[df["market_cap_rank"] <= rank_input].copy()
 
 price_min = st.sidebar.text_input("Price ≥ (INR)", "")
@@ -140,6 +140,19 @@ if price_max.strip():
         filtered_df = filtered_df[filtered_df["current_price"] <= float(price_max.replace(",", ""))]
     except:
         st.sidebar.error("❌ Invalid max price")
+
+# --- Comparison Filter: 1h % (API) vs 1h % (DB) ---
+
+compare_option = st.sidebar.selectbox(
+    "Compare live prices:",
+    ("All", "API % > DB %", "API % < DB %")
+)
+
+if compare_option == "API % > DB %":
+    filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] > filtered_df["mongo_1h_change"]]
+elif compare_option == "API % < DB %":
+    filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] < filtered_df["mongo_1h_change"]]
+
 
 # --- % Change Filters ---
 def apply_pct_filter(df, column, label):
