@@ -124,7 +124,7 @@ st.markdown(f"🕒 **Last API Update:** `{formatted_ts}`")
 # --- Sidebar Filters ---
 st.sidebar.header("🔍 Filters")
 max_rank = int(df["market_cap_rank"].dropna().max())
-rank_input = st.sidebar.number_input("Market Cap Rank ≤", 1, max_rank, min(200, max_rank))
+rank_input = st.sidebar.number_input("Market Cap Rank ≤", 1, max_rank, min(max_rank, max_rank))
 filtered_df = df[df["market_cap_rank"] <= rank_input].copy()
 
 price_min = st.sidebar.text_input("Price ≥ (INR)", "")
