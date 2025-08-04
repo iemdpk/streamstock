@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import requests
+import plotly.express as px
 
-# --- Indian number formatter ---
+# --- Format INR numbers ---
 def format_inr(value):
     try:
         num = float(value)
@@ -20,21 +21,21 @@ def format_inr(value):
     except:
         return "₹ 0.00"
 
-# --- Get number of digits before decimal ---
+# --- Count digits before decimal ---
 def get_length_before_decimal(value):
     try:
         return len(str(int(float(value))))
     except:
         return 0
 
-# --- Format % change to 2 decimals ---
+# --- Format % change ---
 def format_pct(val):
     try:
         return round(float(val), 2)
     except:
         return 0.0
 
-# --- Fetch data from CoinGecko API ---
+# --- Load data from CoinGecko ---
 @st.cache_data(ttl=300)
 def load_data():
     url = "https://api.coingecko.com/api/v3/coins/markets"
@@ -54,49 +55,42 @@ def load_data():
     else:
         return pd.DataFrame()
 
-# --- Load Data ---
+# --- Load data ---
 df = load_data()
 
-# --- Set Streamlit layout ---
-st.set_page_config(page_title="Crypto Filter", layout="wide")
+# --- Layout ---
+st.set_page_config(page_title="Crypto Dashboard", layout="wide")
 st.title("🪙 Crypto Dashboard - CoinGecko INR")
 
-# --- Handle API issues ---
+# --- Data validation ---
 if df.empty or "market_cap_rank" not in df.columns:
     st.error("❌ Failed to load or parse data from CoinGecko API.")
-    st.write("🔍 Response Preview:")
-    st.json(df.head(1).to_dict())
     st.stop()
 
-# --- Sidebar Filters ---
+# --- Sidebar filters ---
 st.sidebar.header("🔍 Multi-Level Filters")
 
-# 1️⃣ Market Cap Rank ≤ (default 150)
+# 1️⃣ Market Cap Rank (default 150)
 max_rank = int(df["market_cap_rank"].dropna().max())
-rank_input = st.sidebar.number_input(
-    "1️⃣ Market Cap Rank ≤", min_value=1, max_value=max_rank, value=min(150, max_rank)
-)
+rank_input = st.sidebar.number_input("1️⃣ Market Cap Rank ≤", 1, max_rank, value=min(150, max_rank))
 filtered_df = df[df["market_cap_rank"] <= rank_input].copy()
 
-# 2️⃣ Current Price ≥
+# 2️⃣ Price filters
 price_min_input = st.sidebar.text_input("2️⃣ Current Price ≥ (INR)", "")
 if price_min_input.strip():
     try:
-        min_val = float(price_min_input.replace(",", ""))
-        filtered_df = filtered_df[filtered_df["current_price"] >= min_val]
-    except ValueError:
-        st.sidebar.error("❌ Enter a valid number for min price")
+        filtered_df = filtered_df[filtered_df["current_price"] >= float(price_min_input.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid min price")
 
-# 3️⃣ Current Price ≤
 price_max_input = st.sidebar.text_input("3️⃣ Current Price ≤ (INR)", "")
 if price_max_input.strip():
     try:
-        max_val = float(price_max_input.replace(",", ""))
-        filtered_df = filtered_df[filtered_df["current_price"] <= max_val]
-    except ValueError:
-        st.sidebar.error("❌ Enter a valid number for max price")
+        filtered_df = filtered_df[filtered_df["current_price"] <= float(price_max_input.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid max price")
 
-# 🔢 Apply % change filters
+# 🔢 % change filters
 def apply_pct_filter(df, column, label):
     if column not in df.columns:
         return df
@@ -117,12 +111,12 @@ filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_200d_in_cur
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_1y_in_currency", "🔹 1y")
 filtered_df = apply_pct_filter(filtered_df, "market_cap_change_percentage_24h", "🧰 MCap 24h")
 
-# --- Format numbers and compute extras ---
+# --- Format + add new columns ---
 filtered_df["formatted_price"] = filtered_df["current_price"].apply(format_inr)
 filtered_df["formatted_market_cap"] = filtered_df["market_cap"].apply(format_inr)
 filtered_df["market_cap_length"] = filtered_df["market_cap"].apply(get_length_before_decimal)
 
-# Format percentage columns to 2 decimal places
+# Format % columns to 2 decimals
 pct_cols = [
     "price_change_percentage_1h_in_currency",
     "price_change_percentage_24h_in_currency",
@@ -135,7 +129,14 @@ for col in pct_cols:
     if col in filtered_df.columns:
         filtered_df[col] = filtered_df[col].apply(format_pct)
 
-# --- Show Data ---
+# --- Market Sentiment ---
+positive_count = (filtered_df["price_change_percentage_24h_in_currency"] > 0).sum()
+negative_count = (filtered_df["price_change_percentage_24h_in_currency"] < 0).sum()
+sentiment = "📈 Market is Bullish" if positive_count > negative_count else "📉 Market is Bearish"
+st.markdown(f"### {sentiment}")
+st.write(f"✅ Positive: **{positive_count}** | ❌ Negative: **{negative_count}**")
+
+# --- Data Table ---
 st.subheader(f"📊 Showing {len(filtered_df)} coins")
 st.dataframe(
     filtered_df[[
@@ -146,7 +147,7 @@ st.dataframe(
         "price_change_percentage_14d_in_currency",
         "price_change_percentage_30d_in_currency",
         "market_cap_length",
-        "market_cap",  # raw for sorting
+        "market_cap",
         "formatted_price",
         "formatted_market_cap",
         "market_cap_change_percentage_24h"
@@ -168,3 +169,59 @@ st.dataframe(
     use_container_width=True,
     height=900
 )
+
+# --- Timeframe selection for Top Movers ---
+st.subheader("📊 Top Movers")
+timeframe_options = {
+    "1h": "price_change_percentage_1h_in_currency",
+    "24h": "price_change_percentage_24h_in_currency",
+    "7d": "price_change_percentage_7d_in_currency",
+    "14d": "price_change_percentage_14d_in_currency",
+    "30d": "price_change_percentage_30d_in_currency",
+}
+selected_timeframe_label = st.selectbox("🔁 Select Time Frame for Top Movers", list(timeframe_options.keys()))
+selected_timeframe_col = timeframe_options[selected_timeframe_label]
+
+# Filter only if column exists
+if selected_timeframe_col in filtered_df.columns:
+    # Top Gainers
+    top_gainers = (
+        filtered_df[filtered_df[selected_timeframe_col] > 0]
+        .sort_values(selected_timeframe_col, ascending=False)
+        .head(10)
+    )
+    st.markdown(f"### 📈 Top 10 Gainers ({selected_timeframe_label})")
+    fig_gain = px.bar(
+        top_gainers,
+        x="name",
+        y=selected_timeframe_col,
+        text=selected_timeframe_col,
+        color=selected_timeframe_col,
+        color_continuous_scale="greens",
+        labels={selected_timeframe_col: f"{selected_timeframe_label} % Change", "name": "Coin"},
+    )
+    fig_gain.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
+    fig_gain.update_layout(xaxis_tickangle=-45, height=400)
+    st.plotly_chart(fig_gain, use_container_width=True)
+
+    # Top Losers
+    top_losers = (
+        filtered_df[filtered_df[selected_timeframe_col] < 0]
+        .sort_values(selected_timeframe_col)
+        .head(10)
+    )
+    st.markdown(f"### 📉 Top 10 Losers ({selected_timeframe_label})")
+    fig_loss = px.bar(
+        top_losers,
+        x="name",
+        y=selected_timeframe_col,
+        text=selected_timeframe_col,
+        color=selected_timeframe_col,
+        color_continuous_scale="reds",
+        labels={selected_timeframe_col: f"{selected_timeframe_label} % Change", "name": "Coin"},
+    )
+    fig_loss.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
+    fig_loss.update_layout(xaxis_tickangle=-45, height=400)
+    st.plotly_chart(fig_loss, use_container_width=True)
+else:
+    st.warning(f"⚠️ Data for {selected_timeframe_label} is not available.")
