@@ -207,13 +207,13 @@ if time_col in filtered_df.columns:
     top_losers = filtered_df[filtered_df[time_col] < 0].sort_values(time_col).head(10)
 
     st.markdown(f"### 📈 Top Gainers ({time_choice})")
-    fig_gain = px.bar(top_gainers, x="name", y=time_col, text=time_col, color=time_col, color_continuous_scale="greens")
+    fig_gain = px.bar(top_gainers, x="name", y=time_col, text=time_col)
     fig_gain.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
     fig_gain.update_layout(xaxis_tickangle=-45, height=400)
     st.plotly_chart(fig_gain, use_container_width=True)
 
     st.markdown(f"### 📉 Top Losers ({time_choice})")
-    fig_loss = px.bar(top_losers, x="name", y=time_col, text=time_col, color=time_col, color_continuous_scale="reds")
+    fig_loss = px.bar(top_losers, x="name", y=time_col, text=time_col)
     fig_loss.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
     fig_loss.update_layout(xaxis_tickangle=-45, height=400)
     st.plotly_chart(fig_loss, use_container_width=True)
