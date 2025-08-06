@@ -7,6 +7,23 @@ import certifi
 from datetime import datetime
 import pytz
 
+def get_perpetual_futures():
+    url = f"https://api.india.delta.exchange/v2/products"
+    print(f"🌐 Fetching perpetual futures from {url}...")
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        products = r.json().get("result", [])
+        symbols = [
+            p["symbol"] for p in products
+            if p.get("contract_type") == "perpetual_futures" and p.get("state") == "live"
+        ]
+        print(f"📈 Found {len(symbols)} live perpetual futures")
+        return symbols
+    except Exception as e:
+        print(f"❌ Error fetching symbols: {e}")
+        return []
+
 # --- MongoDB Load ---
 @st.cache_data(ttl=300)
 def load_mongo_data():
@@ -77,6 +94,8 @@ def load_data():
     }
     response = requests.get(url, params=params)
     if response.status_code == 200:
+        future = get_perpetual_futures();
+        print(future);
         return pd.DataFrame(response.json())
     return pd.DataFrame()
 
