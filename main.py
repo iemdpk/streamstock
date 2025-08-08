@@ -266,39 +266,92 @@ st.subheader(f"📋 {len(filtered_df)} Coins")
 filtered_df = filtered_df.sort_values("market_cap_rank")
 
 # Display the table with pinned market cap rank
+
+def format_pct1(val):
+    try:
+        # Remove % sign if present and convert to float
+        if isinstance(val, str):
+            val = val.replace('%', '')
+        return round(float(val), 2)
+    except:
+        return 0.00
+
+# Then update the styling code:
+def color_negative_red(val):
+    try:
+        # Handle both numeric and string-with-% values
+        num = float(str(val).replace('%','')) if isinstance(val, str) else float(val)
+        color = 'green' if num > 0 else 'red' if num < 0 else 'black'
+        return f'color: {color}'
+    except:
+        return 'color: black'
+
+# Create display dataframe with numeric values
+display_df = filtered_df[[
+    "market_cap_rank", "name", "symbol",
+    "price_change_percentage_1h_in_currency", "mongo_1h_change",
+    "price_change_percentage_24h_in_currency",
+    "price_change_percentage_7d_in_currency",
+    "price_change_percentage_14d_in_currency",
+    "price_change_percentage_30d_in_currency",
+    "Indicator",
+    "formatted_price", 
+    "target_pct",
+    "formatted_target",
+    "stop_loss_pct",
+    "formatted_stop_loss",
+    "formatted_market_cap"
+]].copy()
+
+# Convert percentage columns to numeric
+for col in [
+    "price_change_percentage_1h_in_currency", "mongo_1h_change",
+    "price_change_percentage_24h_in_currency",
+    "price_change_percentage_7d_in_currency",
+    "price_change_percentage_14d_in_currency",
+    "price_change_percentage_30d_in_currency",
+    "target_pct", "stop_loss_pct"
+]:
+    display_df[col] = display_df[col].apply(format_pct1)
+
+# Rename columns
+display_df = display_df.rename(columns={
+    "market_cap_rank": "Rank",
+    "name": "Name",
+    "symbol": "Symbol",
+    "price_change_percentage_1h_in_currency": "1h % (API)",
+    "mongo_1h_change": "1h % (DB)",
+    "price_change_percentage_24h_in_currency": "24h (%)",
+    "price_change_percentage_7d_in_currency": "7d (%)",
+    "price_change_percentage_14d_in_currency": "14d (%)",
+    "price_change_percentage_30d_in_currency": "30d (%)",
+    "formatted_price": "Price (₹)",
+    "target_pct": "Target %",
+    "formatted_target": "Target (₹)",
+    "stop_loss_pct": "Stop Loss %",
+    "formatted_stop_loss": "Stop Loss (₹)",
+    "formatted_market_cap": "Market Cap (₹)",
+    "Indicator": "Action"
+})
+
+# Apply styling
+styled_df = display_df.style.applymap(color_negative_red, subset=[
+    "1h % (API)", "1h % (DB)", "24h (%)", "7d (%)", 
+    "14d (%)", "30d (%)", "Target %", "Stop Loss %"
+]).format({
+    "1h % (API)": "{:.2f}%",
+    "1h % (DB)": "{:.2f}%",
+    "24h (%)": "{:.2f}%",
+    "7d (%)": "{:.2f}%",
+    "14d (%)": "{:.2f}%",
+    "30d (%)": "{:.2f}%",
+    "Target %": "{:.1f}%",
+    "Stop Loss %": "{:.1f}%"
+})
+
+# Display the styled dataframe
 st.dataframe(
-    filtered_df[[
-        "market_cap_rank", "name", "symbol",
-        "price_change_percentage_1h_in_currency", "mongo_1h_change",
-        "price_change_percentage_24h_in_currency",
-        "price_change_percentage_7d_in_currency",
-        "price_change_percentage_14d_in_currency",
-        "price_change_percentage_30d_in_currency",
-        "Indicator",
-        "formatted_price", 
-        "target_pct",
-        "formatted_target",
-        "stop_loss_pct",
-        "formatted_stop_loss",
-        "formatted_market_cap"
-    ]].rename(columns={
-        "market_cap_rank": "Rank",
-        "name": "Name",
-        "symbol": "Symbol",
-        "price_change_percentage_1h_in_currency": "1h % (API)",
-        "mongo_1h_change": "1h % (DB)",
-        "price_change_percentage_24h_in_currency": "24h (%)",
-        "price_change_percentage_7d_in_currency": "7d (%)",
-        "price_change_percentage_14d_in_currency": "14d (%)",
-        "price_change_percentage_30d_in_currency": "30d (%)",
-        "formatted_price": "Price (₹)",
-        "target_pct": "Target %",
-        "formatted_target": "Target (₹)",
-        "stop_loss_pct": "Stop Loss %",
-        "formatted_stop_loss": "Stop Loss (₹)",
-        "formatted_market_cap": "Market Cap (₹)",
-        "Indicator": "Action"
-    }),
+    styled_df,
     use_container_width=True,
     height=1000,
     column_config={
@@ -315,6 +368,7 @@ st.dataframe(
         "Stop Loss (₹)", "Market Cap (₹)"
     )
 )
+
 
 # --- Top Movers ---
 st.subheader("📊 Top Movers")
