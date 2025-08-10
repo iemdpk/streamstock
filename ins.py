@@ -177,6 +177,42 @@ if price_max.strip():
     except:
         st.sidebar.error("❌ Invalid max price")
 
+
+
+st.sidebar.subheader("24h min max")
+price_min24 = st.sidebar.text_input("24 min %", "")
+if price_min24.strip():
+    try:
+        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] >= float(price_min24.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid min price")
+
+price_max24 = st.sidebar.text_input("24 max %", "")
+if price_max24.strip():
+    try:
+        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] <= float(price_max24.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid max price")
+
+
+st.sidebar.subheader("1h min max")
+price_min1 = st.sidebar.text_input("1 min %", "")
+if price_min1.strip():
+    try:
+        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] >= float(price_min1.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid min price")
+
+price_max1 = st.sidebar.text_input("1 max %", "")
+if price_max1.strip():
+    try:
+        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] <= float(price_max1.replace(",", ""))]
+    except:
+        st.sidebar.error("❌ Invalid max price")
+
+
+
+
 # Apply Advanced Filters
 if volatility_option == "Low (<1%)":
     filtered_df = filtered_df[filtered_df["price_change_percentage_24h"].abs() < 1]
