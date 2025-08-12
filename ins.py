@@ -295,6 +295,16 @@ day_sentiment = "📈 Bullish" if positive_count > negative_count else "📉 Bea
 st.markdown(f"### 📊 24h Sentiment: {day_sentiment}")
 st.write(f"✅ Positive: {positive_count} | ❌ Negative: {negative_count}")
 
+# 1h sentiment
+positive_count_1h = (filtered_df["price_change_percentage_1h_in_currency"] > 0).sum()
+negative_count_1h = (filtered_df["price_change_percentage_1h_in_currency"] < 0).sum()
+
+hour_sentiment = "📈 Bullish" if positive_count_1h > negative_count_1h else "📉 Bearish"
+
+st.markdown(f"### ⏳ 1h Sentiment: {hour_sentiment}")
+st.write(f"✅ Positive: {positive_count_1h} | ❌ Negative: {negative_count_1h}")
+
+
 # --- Data Table ---
 st.subheader(f"📋 {len(filtered_df)} Coins")
 
