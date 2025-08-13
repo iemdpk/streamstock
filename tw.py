@@ -1,21 +1,21 @@
-from twilio.rest import Client
+# from twilio.rest import Client
 
-# Your Twilio credentials (from https://www.twilio.com/console)
-account_sid = "ACee2bb220157dd2b516ea651340976347"
-auth_token = "049075ad3046f09c5927700c75ed16c2"
-twilio_number = "+12232239309"  # Your Twilio phone number (E.164 format)
+# # Your Twilio credentials (from https://www.twilio.com/console)
+# account_sid = "ACee2bb220157dd2b516ea651340976347"
+# auth_token = "049075ad3046f09c5927700c75ed16c2"
+# twilio_number = "+12232239309"  # Your Twilio phone number (E.164 format)
 
-# Initialize client
-client = Client(account_sid, auth_token)
+# # Initialize client
+# client = Client(account_sid, auth_token)
 
-# Phone number to call (must be verified in Twilio if trial account)
-to_number = "+918709476349"  # Replace with recipient's phone number
+# # Phone number to call (must be verified in Twilio if trial account)
+# to_number = "+918709476349"  # Replace with recipient's phone number
 
-# Make the call
-call = client.calls.create(
-    to=to_number,
-    from_=twilio_number,
-    twiml='<Response><Say voice="alice">Hello! This is a test call from Twilio in Python.</Say></Response>'
-)
+# # Make the call
+# call = client.calls.create(
+#     to=to_number,
+#     from_=twilio_number,
+#     twiml='<Response><Say voice="alice">Hello! This is a test call from Twilio in Python.</Say></Response>'
+# )
 
-print(f"Call initiated. SID: {call.sid}")
+# print(f"Call initiated. SID: {call.sid}")
