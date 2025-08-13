@@ -11,10 +11,10 @@
 # DB_NAME = "crypto_alerts"
 # COLLECTION_NAME = "status"
 
-# TWILIO_SID = "ACee2bb220157dd2b516ea651340976347"
-# TWILIO_AUTH = "049075ad3046f09c5927700c75ed16c2"
-# TWILIO_FROM = "+12232239309"  # Twilio number
-# TWILIO_TO = "+918709476349"  # Your number
+# TWILIO_SID = ""
+# TWILIO_AUTH = ""
+# TWILIO_FROM = ""  # Twilio number
+# TWILIO_TO = ""  # Your number
 
 
 # def fetch_crypto_data():
