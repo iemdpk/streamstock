@@ -77,21 +77,38 @@ def calculate_target_stop(row):
 # --- CoinGecko Load ---
 @st.cache_data(ttl=300)
 def load_data():
-    url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": "inr",
-        "order": "market_cap_desc",
-        "per_page": 250,
-        "page": 1,
-        "sparkline": "false",
-        "locale": "en",
-        "precision": 2,
-        "price_change_percentage": "1h,24h,7d,14d,30d,200d,1y"
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return pd.DataFrame(response.json())
-    return pd.DataFrame()
+    symbols_to_match = """
+ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP,CYBER,BONK,AAVE,WIF,OP,CRV,SEI,XLM,APT,TON,ETC,NEAR,WLD,ETHFI,SHIB,ONDO,BNB,HBAR,TIA,FIL,PENDLE,INJ,HIFI,LDO,TAO,SKL,EIGEN,BCH,BOME,JUP,VIRTUAL,MYRO,PNUT,BIO,AERO,CFX,PEOPLE,FLOKI,THE,MAGIC,DOT,MOODENG,SPX,ATOM,ALGO,ANIME,MKR,ORDI,ZRO,GALA,POPCAT,OM,RENDER,IP,JTO,IO,S,VINE,SAND,TRX,MLN,ALT,ENS,AI16Z,CAKE,TRB,POL,ZK,COMP,XMR,JASMY,KMNO,AIXBT,SHELL,VET,MEME,NOT,ICP,STX,STRK,PAXG,GOAT,KAS,PYTH,BRETT,SSV,AVAAI,000MOG,ILV,DYDX,APE,GRIFFAIN,NEIROETH,SWARMS,MASK,EGLD,KAITO,BB,PROM,ACH,COOKIE,OMNI,CAT,LISTA,XTZ,RSR,SOLV,ARC,MEW,KAIA,GRASS,LQTY,PIPPIN,HFT,DOGS,CKB,RPL,XAI,PARTI,EPIC,RVN,ID,MELANIA,W,ZIL,BANANA,AI,SUSHI,CETUS,AR,MORPHO,ZEC,IMX,GRT,BAN,AXL,MAVIA,ZRX,FLM,HIPPO,ARPA,ARKM,PORTAL,VANRY,KSM,ORCA,RUNE,PHB,NIL,RARE,GMX,ME,HMSTR,DASH,QNT,GMT,UMA,IOST,USUAL,ONT,AUCTION,HOT,BMT,FXS,USTC,MOVR,MANA,COW,BSW,1INCH,SWELL,T,VELODROME,GPS,OGN,SPELL,FIDA,THETA,PLUME,TRU,SUN,CHILLGUY,SCR,DRIFT,VANA,SONIC,AXS,REZ,RATS,DEXE,NEO,DENT,UXLINK,ROSE,ATH,RLC,ICX,HOOK,PONKE,FLOW,XCN,TOKEN,STG,CHESS,DEGEN,BLUR,CELO,ACX,TWT,G,IOTA,FIO,LEVER,ALPHA,JOE,PERP,MANTA,HEI,BNT,ASTR,OXT,ATA,C98,BIGTIME,POLYX,PHA,ONE,ETHW,LRC,EDU,WAXP,BSV,B3,MOCA,SUPER,ZEREBRO,CELR,VVV,LPT,GAS,HIVE,ALCH,YFI,MUBARAK,AEVO,MINA,VTHO,COTI,KAVA,WOO,CATI,RED,SNX,X,COS,ONG,AGLD,ZETA,STEEM,KDA,IOTX,ZEN,LUNC,SAFE,ENJ,KOMA,DYM,QUICK,YGG,SAGA,ARK,SLERF,GLM,NTRN,USDC,NFP,SYS,LUNA2,ACT,ALICE,QTUM,METIS,FORTH,LUMIA,AKT,VIC,BICO,API3,SYN,CGPT,CTSI,RDNT,STORJ,PIXEL,VOXEL,BAKE,TNSR,SCRT,TLM,SXP,POWR,HIGH,CHR,BEL,RONIN,XVS,AVA,SFP,NKN,NMR,FLUX,RIF
+""".replace("\n","").split(",")
+    
+    all_coins = []
+
+    # Fetch multiple pages
+    for page in range(1, 11):
+        url = "https://api.coingecko.com/api/v3/coins/markets"
+        params = {
+            "vs_currency": "inr",
+            "order": "market_cap_desc",
+            "per_page": 250,
+            "page": page,
+            "sparkline": False,
+            "locale": "en",
+            "precision": 2,
+            "price_change_percentage": "1h,24h,7d,14d,30d,200d,1y"
+        }
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            all_coins.extend(data)
+        else:
+            print(f"Failed to fetch page {page}: {response.status_code}")
+
+    # Filter by symbol list
+    matched_coins = [coin for coin in all_coins if coin['symbol'].upper() in symbols_to_match]
+
+    # Convert to DataFrame
+    df = pd.DataFrame(matched_coins)
+    return df
 
 # --- Load Data ---
 df = load_data()
@@ -295,7 +312,7 @@ day_sentiment = "📈 Bullish" if positive_count > negative_count else "📉 Bea
 st.markdown(f"### 📊 24h Sentiment: {day_sentiment}")
 st.write(f"✅ Positive: {positive_count} | ❌ Negative: {negative_count}")
 
-# 1h sentiment
+# 1h sentiment one hour
 positive_count_1h = (filtered_df["price_change_percentage_1h_in_currency"] > 0).sum()
 negative_count_1h = (filtered_df["price_change_percentage_1h_in_currency"] < 0).sum()
 
