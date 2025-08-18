@@ -112,7 +112,9 @@ def main():
 
     # Analysis
     overall_stats = analyze_market(df)
-    top100_stats = analyze_market(df.head(100))
+    df_sorted = df.sort_values(by='market_cap_rank').reset_index(drop=True)
+    top100_stats = analyze_market(df_sorted.head(100))
+ 
 
     # Bitcoin data
     btc = df[df['name'] == 'Bitcoin']

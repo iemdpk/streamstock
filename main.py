@@ -197,36 +197,38 @@ if price_max.strip():
 
 
 st.sidebar.subheader("24h min max")
-price_min24 = st.sidebar.text_input("24 min %", "")
+price_min24 = st.sidebar.text_input("24h min %", "")
 if price_min24.strip():
     try:
-        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] >= float(price_min24.replace(",", ""))]
-    except:
-        st.sidebar.error("❌ Invalid min price")
+        min_val = float(price_min24.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] >= min_val]
+    except ValueError:
+        st.sidebar.error("❌ Invalid min % (24h)")
 
-price_max24 = st.sidebar.text_input("24 max %", "")
+price_max24 = st.sidebar.text_input("24h max %", "")
 if price_max24.strip():
     try:
-        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] <= float(price_max24.replace(",", ""))]
-    except:
-        st.sidebar.error("❌ Invalid max price")
-
+        max_val = float(price_max24.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["price_change_percentage_24h"] <= max_val]
+    except ValueError:
+        st.sidebar.error("❌ Invalid max % (24h)")
 
 st.sidebar.subheader("1h min max")
-price_min1 = st.sidebar.text_input("1 min %", "")
+price_min1 = st.sidebar.text_input("1h min %", "")
 if price_min1.strip():
     try:
-        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] >= float(price_min1.replace(",", ""))]
-    except:
-        st.sidebar.error("❌ Invalid min price")
+        min_val = float(price_min1.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] >= min_val]
+    except ValueError:
+        st.sidebar.error("❌ Invalid min % (1h)")
 
-price_max1 = st.sidebar.text_input("1 max %", "")
+price_max1 = st.sidebar.text_input("1h max %", "")
 if price_max1.strip():
     try:
-        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] <= float(price_max1.replace(",", ""))]
-    except:
-        st.sidebar.error("❌ Invalid max price")
-
+        max_val = float(price_max1.replace(",", ""))
+        filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] <= max_val]
+    except ValueError:
+        st.sidebar.error("❌ Invalid max % (1h)")
 
 
 
@@ -376,6 +378,11 @@ for col in [
     "target_pct", "stop_loss_pct"
 ]:
     display_df[col] = display_df[col].apply(format_pct1)
+# Example: Add a new column 'Diff (API-DB)' = API 1h % - DB 1h %
+display_df["Diff (API-DB)"] = (
+    display_df["price_change_percentage_1h_in_currency"] 
+    - display_df["mongo_1h_change"]
+)
 
 # Rename columns
 display_df = display_df.rename(columns={
@@ -384,6 +391,7 @@ display_df = display_df.rename(columns={
     "symbol": "Symbol",
     "price_change_percentage_1h_in_currency": "1h % (API)",
     "mongo_1h_change": "1h % (DB)",
+    "Diff (API-DB)": "Diff 1h %",
     "price_change_percentage_24h_in_currency": "24h (%)",
     "price_change_percentage_7d_in_currency": "7d (%)",
     "price_change_percentage_14d_in_currency": "14d (%)",
@@ -399,11 +407,12 @@ display_df = display_df.rename(columns={
 
 # Apply styling
 styled_df = display_df.style.applymap(color_negative_red, subset=[
-    "1h % (API)", "1h % (DB)", "24h (%)", "7d (%)", 
+    "1h % (API)", "1h % (DB)", "Diff 1h %", "24h (%)", "7d (%)", 
     "14d (%)", "30d (%)", "Target %", "Stop Loss %"
 ]).format({
     "1h % (API)": "{:.2f}%",
     "1h % (DB)": "{:.2f}%",
+    "Diff 1h %": "{:.2f}%",
     "24h (%)": "{:.2f}%",
     "7d (%)": "{:.2f}%",
     "14d (%)": "{:.2f}%",
@@ -412,7 +421,7 @@ styled_df = display_df.style.applymap(color_negative_red, subset=[
     "Stop Loss %": "{:.1f}%"
 })
 
-# Display the styled dataframe
+# Display in Streamlit
 st.dataframe(
     styled_df,
     use_container_width=True,
@@ -425,7 +434,7 @@ st.dataframe(
         )
     },
     column_order=(
-        "Rank", "Name", "Symbol", "1h % (API)", "1h % (DB)", 
+        "Rank", "Name", "Symbol", "1h % (API)", "1h % (DB)", "Diff 1h %",
         "24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
         "Price (₹)", "Target %", "Target (₹)", "Stop Loss %", 
         "Stop Loss (₹)", "Market Cap (₹)"
