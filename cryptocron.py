@@ -4,6 +4,19 @@ from pymongo import MongoClient
 import certifi
 from datetime import datetime
 import pytz
+from telegram import Bot
+
+BOT_TOKEN = "7542846023:AAEvykrFTN1gs50aJsSgSxyik185v27Lfkc"   # From BotFather
+CHAT_ID = "1334996232"       # From getUpdates or @userinfobot
+TIMEZONE = "Asia/Kolkata"
+
+def send_telegram_alert(message):
+    bot = Bot(token=BOT_TOKEN)
+    india_tz = pytz.timezone(TIMEZONE)
+    indian_time = datetime.now(india_tz).strftime("%d-%m-%Y %H:%M IST")
+    final_msg = f"{message}\n\n⌛ Update: {indian_time}"
+    bot.send_message(chat_id=CHAT_ID, text=final_msg, parse_mode="Markdown")
+
 
 def fetch_and_store():
 
@@ -56,6 +69,6 @@ def fetch_and_store():
     # Save data
     collection.insert_many(df.to_dict(orient="records"))
     print("✅ Data saved to MongoDB at", df["timestamp"].iloc[0])
-
+    send_telegram_alert("crypto cron runned")
 if __name__ == "__main__":
     fetch_and_store()

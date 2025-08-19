@@ -279,7 +279,9 @@ def apply_pct_filter(df, column, label):
         return df[df[column] < 0]
     return df
 
+
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_1h_in_currency", "1h")
+filtered_df = apply_pct_filter(filtered_df, "mongo_1h_change", "1h mongo")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_24h_in_currency", "24h")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_7d_in_currency", "7d")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_14d_in_currency", "14d")
