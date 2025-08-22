@@ -450,7 +450,7 @@ st.dataframe(
 MONGO_URI = "mongodb+srv://iemdpk:Imback2play@localserver.cwqbg.mongodb.net/?retryWrites=true&w=majority"
 DB_NAME = "crypto_t"
 
-@st.cache_resource(ttl=1200)
+@st.cache_resource(ttl=120)
 def get_data():
     client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
     db = client[DB_NAME]
