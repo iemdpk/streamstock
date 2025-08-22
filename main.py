@@ -6,6 +6,7 @@ from pymongo import MongoClient
 import certifi
 from datetime import datetime
 import pytz
+import matplotlib.pyplot as plt
 
 # --- MongoDB Load ---
 @st.cache_data(ttl=300)
@@ -444,84 +445,165 @@ st.dataframe(
 )
 
 
-# --- Top Movers ---
-st.subheader("📊 Top Movers")
-timeframe_options = {
-    "1h": "price_change_percentage_1h_in_currency",
-    "24h": "price_change_percentage_24h_in_currency",
-    "7d": "price_change_percentage_7d_in_currency",
-    "14d": "price_change_percentage_14d_in_currency",
-    "30d": "price_change_percentage_30d_in_currency",
-}
-time_choice = st.selectbox("Choose Timeframe", list(timeframe_options.keys()))
-time_col = timeframe_options[time_choice]
 
-if time_col in filtered_df.columns:
-    top_gainers = filtered_df[filtered_df[time_col] > 0].sort_values(time_col, ascending=False).head(10)
-    top_losers = filtered_df[filtered_df[time_col] < 0].sort_values(time_col).head(10)
+# ===== CONFIG =====
+MONGO_URI = "mongodb+srv://iemdpk:Imback2play@localserver.cwqbg.mongodb.net/?retryWrites=true&w=majority"
+DB_NAME = "crypto_t"
 
-    st.markdown(f"### 📈 Top Gainers ({time_choice})")
-    fig_gain = px.bar(top_gainers, x="name", y=time_col, text=time_col)
-    fig_gain.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
-    fig_gain.update_layout(xaxis_tickangle=-45, height=400)
-    st.plotly_chart(fig_gain, use_container_width=True)
+@st.cache_resource(ttl=1200)
+def get_data():
+    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    db = client[DB_NAME]
 
-    st.markdown(f"### 📉 Top Losers ({time_choice})")
-    fig_loss = px.bar(top_losers, x="name", y=time_col, text=time_col)
-    fig_loss.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
-    fig_loss.update_layout(xaxis_tickangle=-45, height=400)
-    st.plotly_chart(fig_loss, use_container_width=True)
+    def fetch_collection(name):
+        return list(db[name].find({}))
 
-# --- Performance Metrics ---
-st.subheader("📈 Performance Metrics")
-col1, col2, col3 = st.columns(3)
+    return fetch_collection("positive"), fetch_collection("negative")
 
-with col1:
-    avg_1h = filtered_df["price_change_percentage_1h_in_currency"].mean()
-    st.metric("Average 1h Change", f"{avg_1h:.2f}%")
+def analyze_collection(data, trend_label):
+    results = []
+    for doc in data:
+        history = doc.get("price_history", [])
+        if len(history) < 2:
+            continue
 
-with col2:
-    avg_24h = filtered_df["price_change_percentage_24h_in_currency"].mean()
-    st.metric("Average 24h Change", f"{avg_24h:.2f}%")
+        first = history[0]
+        last = history[-1]
 
-with col3:
-    avg_7d = filtered_df["price_change_percentage_7d_in_currency"].mean()
-    st.metric("Average 7d Change", f"{avg_7d:.2f}%")
+        prices = [point["price"] for point in history]
+        percents_24h = [point.get("percentage24h", 0) for point in history]
 
-# --- Customizable Target/Stop Loss Section ---
-st.subheader("🎯 Custom Target/Stop Loss Calculator")
+        first_price = first["price"]
+        last_price = last["price"]
+        delta_price = round(last_price - first_price, 4)
 
-selected_coin = st.selectbox("Select Coin", filtered_df["name"].unique())
-coin_data = filtered_df[filtered_df["name"] == selected_coin].iloc[0]
-current_price = coin_data["current_price"]
+        first_24h = first.get("percentage24h", 0)
+        last_24h = last.get("percentage24h", 0)
+        percent_change = round(last_24h - first_24h, 2)  # updated calculation
 
-col1, col2 = st.columns(2)
-with col1:
-    target_pct = st.number_input("Target Percentage (%)", min_value=0.1, max_value=100.0, value=5.0, step=0.1)
-    target_price = current_price * (1 + target_pct/100)
-    st.metric("Target Price", format_inr(target_price))
-    st.write(f"Potential Profit: {format_inr(target_price - current_price)}")
+        first_1h = first.get("percentage1h", 0)
+        last_1h = last.get("percentage1h", 0)
+        delta_1h = round(last_1h - first_1h, 4)
 
-with col2:
-    stop_loss_pct = st.number_input("Stop Loss Percentage (%)", min_value=0.1, max_value=100.0, value=3.0, step=0.1)
-    stop_loss_price = current_price * (1 - stop_loss_pct/100)
-    st.metric("Stop Loss Price", format_inr(stop_loss_price))
-    st.write(f"Potential Loss: {format_inr(current_price - stop_loss_price)}")
+        if percent_change > 0:
+            status = "🔼 UP"
+        elif percent_change < 0:
+            status = "🔻 DOWN"
+        else:
+            status = "⏸️ No Change"
 
-# Risk-reward ratio
-risk_reward = (target_price - current_price) / (current_price - stop_loss_price)
-st.metric("Risk-Reward Ratio", f"{risk_reward:.2f}:1", 
-          help="A ratio greater than 1:1 means potential reward outweighs potential risk")
+        results.append({
+            "Symbol": doc["symbol"].upper(),
+            "Trend": trend_label,
+            "Status": status,
+            "First Price": first_price,
+            "Last Price": last_price,
+            "Δ Price": delta_price,
+            "% Change": percent_change,
+            "First 24h %": first_24h,
+            "Last 24h %": last_24h,
+            "First 1h %": first_1h,
+            "Last 1h %": last_1h,
+            "Δ 1h %": delta_1h,
+            "Chart Data (24h %)": percents_24h,
+            "Last Updated": last["timestamp"]
+        })
+    return pd.DataFrame(results)
 
-# Show current price and recent performance
-st.markdown("### Current Coin Metrics")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Current Price", format_inr(current_price))
-with col2:
-    st.metric("1h Change", f"{coin_data['price_change_percentage_1h_in_currency']:.2f}%")
-with col3:
-    st.metric("24h Change", f"{coin_data['price_change_percentage_24h_in_currency']:.2f}%")
+def generate_line_chart(values, symbol):
+    fig, ax = plt.subplots(figsize=(5, 1.5))
+    ax.plot(values, marker='o', linewidth=1.5)
+    ax.set_title(f"{symbol} 24h % Change", fontsize=10)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.grid(True, alpha=0.3)
+    st.pyplot(fig)
 
-# Add some space at the bottom
-st.markdown("<br><br>", unsafe_allow_html=True)
+def highlight_pos_neg(val):
+    if isinstance(val, (int, float)):
+        if val > 0:
+            return ' color: green; font-weight: bold;'
+        elif val < 0:
+            return ' color: red; font-weight: bold;'
+    return ''
+
+def format_2f(val):
+    if isinstance(val, float):
+        return f"{val:.2f}"
+    return val
+
+# ===== Streamlit UI =====
+st.set_page_config("📊 Crypto Trend Analyzer", layout="wide")
+st.title("📊 Mover Gainer")
+st.caption("Auto-refreshes every 20 minutes")
+
+# Load Data
+positive_data, negative_data = get_data()
+positive_df = analyze_collection(positive_data, "Gainer")
+negative_df = analyze_collection(negative_data, "Loser")
+
+# Reordered columns: Symbol first, then % Change, then 1h %, then others
+cols = [
+    "Symbol",
+    "% Change",
+    "Δ Price",
+    "Δ 1h %",
+    "First 24h %",
+    "Last 24h %",
+    "First 1h %",
+    "Last 1h %",
+    "Status",
+    "First Price",
+    "Last Price",
+    "Last Updated"
+]
+
+
+# ===== Show Positive Gainers =====
+st.subheader("🚀 Positive / Gainers")
+if not positive_df.empty:
+    st.dataframe(
+        positive_df[cols]
+        .style.applymap(highlight_pos_neg, subset=[
+            "% Change",
+            "First 1h %", "Last 1h %", "Δ 1h %",
+            "Δ Price",
+            "First 24h %", "Last 24h %"
+        ])
+        .format(format_2f),
+        use_container_width=True
+    )
+else:
+    st.write("No positive/gainer data available.")
+
+# ===== Show Negative Losers =====
+st.subheader("📉 Negative / Losers")
+if not negative_df.empty:
+    st.dataframe(
+        negative_df[cols]
+        .style.applymap(highlight_pos_neg, subset=[
+            "% Change",
+            "First 1h %", "Last 1h %", "Δ 1h %",
+            "Δ Price",
+            "First 24h %", "Last 24h %"
+        ])
+        .format(format_2f),
+        use_container_width=True
+    )
+else:
+    st.write("No negative/loser data available.")
+
+# ===== Mini Charts Section =====
+st.markdown("### 📈 Mini Trend Charts (24h % Movement)")
+
+# Show charts for positive coins
+st.markdown("#### 🚀 Positive / Gainers Charts")
+for idx, row in positive_df.iterrows():
+    with st.expander(f"{row['Symbol']}"):
+        generate_line_chart(row["Chart Data (24h %)"], row["Symbol"])
+
+# Show charts for negative coins
+st.markdown("#### 📉 Negative / Losers Charts")
+for idx, row in negative_df.iterrows():
+    with st.expander(f"{row['Symbol']}"):
+        generate_line_chart(row["Chart Data (24h %)"], row["Symbol"])
