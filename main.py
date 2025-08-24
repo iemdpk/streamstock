@@ -6,6 +6,8 @@ from pymongo import MongoClient
 import certifi
 from datetime import datetime
 import pytz
+import streamlit.components.v1 as components
+
 
 # --- MongoDB Load ---
 @st.cache_data(ttl=300)
@@ -443,6 +445,39 @@ st.dataframe(
     )
 )
 
+coin_name = st.selectbox("Select a Coin for Chart:", df["id"].tolist())
+symbol = df[df["id"] == coin_name]["symbol"].iloc[0].upper()
+
+# Mapping to TradingView Symbol format
+# Default: BINANCE:<COIN>USDT
+tv_symbol = f"BINANCE:{symbol}USDT"
+
+# ===== TRADINGVIEW WIDGET =====
+tradingview_code = f"""
+<div class="tradingview-widget-container">
+  <div id="tradingview_chart"></div>
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <script type="text/javascript">
+  new TradingView.widget({{
+    "width": "100%",
+    "height": 600,
+    "symbol": "{tv_symbol}",
+    "interval": "1", 
+    "timezone": "Asia/Kolkata",
+    "theme": "dark",
+    "style": "1",
+    "locale": "en",
+    "toolbar_bg": "#000000",
+    "enable_publishing": false,
+    "hide_side_toolbar": true,
+    "allow_symbol_change": false
+  }});
+  </script>
+</div>
+"""
+
+components.html(tradingview_code, height=650)
+
 
 # --- Top Movers ---
 st.subheader("📊 Top Movers")
@@ -522,6 +557,6 @@ with col2:
     st.metric("1h Change", f"{coin_data['price_change_percentage_1h_in_currency']:.2f}%")
 with col3:
     st.metric("24h Change", f"{coin_data['price_change_percentage_24h_in_currency']:.2f}%")
-print("new")
+print("new chart")
 # Add some space at the bottom
 st.markdown("<br><br>", unsafe_allow_html=True)
