@@ -479,7 +479,7 @@ def analyze_collection(data, trend_label):
 
         first_24h = first.get("percentage24h", 0)
         last_24h = last.get("percentage24h", 0)
-        percent_change = round(last_24h - first_24h, 2)  # updated calculation
+        percent_change = round(last_24h - first_24h, 2)
 
         first_1h = first.get("percentage1h", 0)
         last_1h = last.get("percentage1h", 0)
@@ -496,6 +496,7 @@ def analyze_collection(data, trend_label):
             "Symbol": doc["symbol"].upper(),
             "Trend": trend_label,
             "Status": status,
+            "Marketcap": doc.get("marketcap", None),   # ✅ NEW
             "First Price": first_price,
             "Last Price": last_price,
             "Δ Price": delta_price,
@@ -545,6 +546,7 @@ negative_df = analyze_collection(negative_data, "Loser")
 # Reordered columns: Symbol first, then % Change, then 1h %, then others
 cols = [
     "Symbol",
+    "Marketcap",   # ✅ added
     "% Change",
     "Δ Price",
     "Δ 1h %",
