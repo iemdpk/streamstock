@@ -522,6 +522,6 @@ with col2:
     st.metric("1h Change", f"{coin_data['price_change_percentage_1h_in_currency']:.2f}%")
 with col3:
     st.metric("24h Change", f"{coin_data['price_change_percentage_24h_in_currency']:.2f}%")
-
+print("new")
 # Add some space at the bottom
 st.markdown("<br><br>", unsafe_allow_html=True)
