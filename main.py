@@ -117,7 +117,7 @@ df = load_data()
 mongo_df = load_mongo_data()
 
 df["TradingView"] = df["symbol"].apply(
-    lambda s: f"https://s.tradingview.com/widgetembed/?symbol=BINANCE:{s.upper()}USDT&interval=1&theme=dark"
+    lambda s: f"https://s.tradingview.com/widgetembed/?symbol=BINANCE:{s.upper()}USDT&interval=1&theme=dark&timezone=Asia/Kolkata"
 )
 
 print(df.head())
