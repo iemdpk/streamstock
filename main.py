@@ -116,6 +116,13 @@ ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP
 df = load_data()
 mongo_df = load_mongo_data()
 
+df["TradingView"] = df["symbol"].apply(
+    lambda s: f"https://s.tradingview.com/widgetembed/?symbol=BINANCE:{s.upper()}USDT&interval=1&theme=dark"
+)
+
+print(df.head())
+
+
 st.set_page_config(page_title="Crypto Dashboard", layout="wide")
 st.title("🪙 Crypto Dashboard")
 
@@ -359,6 +366,7 @@ def color_negative_red(val):
 display_df = filtered_df[[
     "market_cap_rank", "name", "symbol",
     "price_change_percentage_1h_in_currency", "mongo_1h_change",
+    "TradingView",
     "price_change_percentage_24h_in_currency",
     "price_change_percentage_7d_in_currency",
     "price_change_percentage_14d_in_currency",
@@ -396,6 +404,7 @@ display_df = display_df.rename(columns={
     "price_change_percentage_1h_in_currency": "1h % (API)",
     "mongo_1h_change": "1h % (DB)",
     "Diff (API-DB)": "Diff 1h %",
+    "TradingView":"TradingView",
     "price_change_percentage_24h_in_currency": "24h (%)",
     "price_change_percentage_7d_in_currency": "7d (%)",
     "price_change_percentage_14d_in_currency": "14d (%)",
@@ -425,6 +434,9 @@ styled_df = display_df.style.applymap(color_negative_red, subset=[
     "Stop Loss %": "{:.1f}%"
 })
 
+
+
+
 # Display in Streamlit
 st.dataframe(
     styled_df,
@@ -435,11 +447,16 @@ st.dataframe(
             "Rank",
             help="Market Cap Rank",
             width="small",
+        ),
+        "TradingView": st.column_config.LinkColumn(
+            "Chart",
+            help="Click to open TradingView chart",
+            width="small" 
         )
     },
     column_order=(
         "Rank", "Name", "Symbol", "1h % (API)", "1h % (DB)", "Diff 1h %",
-        "24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
+        "TradingView","24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
         "Price (₹)", "Target %", "Target (₹)", "Stop Loss %", 
         "Stop Loss (₹)", "Market Cap (₹)"
     )
