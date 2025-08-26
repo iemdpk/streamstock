@@ -89,7 +89,7 @@ ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP
     all_coins = []
 
     # Fetch multiple pages
-    for page in range(1, 2):
+    for page in range(1, 11):
         url = "https://api.coingecko.com/api/v3/coins/markets"
         params = {
             "vs_currency": "inr",
