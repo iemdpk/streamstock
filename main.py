@@ -9,13 +9,16 @@ import pytz
 import streamlit.components.v1 as components
 
 
+
 # --- MongoDB Load ---
 @st.cache_data(ttl=300)
 def load_mongo_data():
     client = MongoClient("mongodb+srv://iemdpk:Imback2play@localserver.cwqbg.mongodb.net/?retryWrites=true&w=majority", tlsCAFile=certifi.where())
     db = client["crypto"]
     collection = db["snapshots"]
-    return pd.DataFrame(list(collection.find({}, {"id": 1, "price_change_percentage_1h_in_currency": 1, "_id": 0,"timestamp":1})))
+    previous_data = list(db["tracker"].find({}))
+
+    return pd.DataFrame(list(collection.find({}, {"id": 1, "price_change_percentage_1h_in_currency": 1, "_id": 0,"timestamp":1}))),previous_data
 
 # --- INR Formatting ---
 def format_inr(value):
@@ -86,7 +89,7 @@ ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP
     all_coins = []
 
     # Fetch multiple pages
-    for page in range(1, 11):
+    for page in range(1, 2):
         url = "https://api.coingecko.com/api/v3/coins/markets"
         params = {
             "vs_currency": "inr",
@@ -114,7 +117,20 @@ ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP
 
 # --- Load Data ---
 df = load_data()
-mongo_df = load_mongo_data()
+mongo_df,previous_data = load_mongo_data()
+
+print("Ccoin one")
+print(len(previous_data[0]["coins"]));
+
+db0  = pd.DataFrame(previous_data[0]["coins"])
+db1  = pd.DataFrame(previous_data[1]["coins"])
+db2  = pd.DataFrame(previous_data[2]["coins"])
+
+db0.rename(columns={"price_change_percentage_1h_in_currency": "mongo_10_change"}, inplace=True)
+db1.rename(columns={"price_change_percentage_1h_in_currency": "mongo_20_change"}, inplace=True)
+db2.rename(columns={"price_change_percentage_1h_in_currency": "mongo_30_change"}, inplace=True)
+
+
 
 # https://s.tradingview.com/widgetembed/?symbol=BINANCE:{s.upper()}USDT&interval=1&theme=dark&timezone=Asia/Kolkata change to deep link rest things are same
 
@@ -122,7 +138,7 @@ df["TradingView"] = df["symbol"].apply(
     lambda s: f"https://www.tradingview.com/chart/?symbol={s.upper()}USDT&interval=1&theme=dark&timezone=Asia/Kolkata"
 )
 
-print(df.head())
+# print(df.head())
 
 
 st.set_page_config(page_title="Crypto Dashboard", layout="wide")
@@ -135,6 +151,12 @@ if df.empty or mongo_df.empty:
 # --- Merge Mongo data ---
 mongo_df.rename(columns={"price_change_percentage_1h_in_currency": "mongo_1h_change"}, inplace=True)
 df = df.merge(mongo_df, on="id", how="left")
+
+df = df.merge(db0[["id", "mongo_10_change"]], on="id", how="left")
+df = df.merge(db1[["id", "mongo_20_change"]], on="id", how="left")
+df = df.merge(db2[["id", "mongo_30_change"]], on="id", how="left")
+
+print(list(df.columns))
 
 # --- Market Sentiment (API vs MongoDB 1h) ---
 api_avg = df["price_change_percentage_1h_in_currency"].mean()
@@ -290,9 +312,13 @@ def apply_pct_filter(df, column, label):
         return df[df[column] < 0]
     return df
 
-
+print(filtered_df)
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_1h_in_currency", "1h")
 filtered_df = apply_pct_filter(filtered_df, "mongo_1h_change", "1h mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_10_change", "10 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_20_change", "20 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_30_change", "30 mongo")
+
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_24h_in_currency", "24h")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_7d_in_currency", "7d")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_14d_in_currency", "14d")
@@ -367,7 +393,7 @@ def color_negative_red(val):
 # Create display dataframe with numeric values
 display_df = filtered_df[[
     "market_cap_rank", "name", "symbol",
-    "price_change_percentage_1h_in_currency", "mongo_1h_change",
+    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change",
     "TradingView",
     "price_change_percentage_24h_in_currency",
     "price_change_percentage_7d_in_currency",
@@ -384,7 +410,7 @@ display_df = filtered_df[[
 
 # Convert percentage columns to numeric
 for col in [
-    "price_change_percentage_1h_in_currency", "mongo_1h_change",
+    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change",
     "price_change_percentage_24h_in_currency",
     "price_change_percentage_7d_in_currency",
     "price_change_percentage_14d_in_currency",
@@ -398,11 +424,33 @@ display_df["Diff (API-DB)"] = (
     - display_df["mongo_1h_change"]
 )
 
+display_df["10change"] = (
+    display_df["price_change_percentage_1h_in_currency"]   # 10
+    - display_df["mongo_10_change"] #5
+)
+
+
+display_df["20change"] = (
+    display_df["mongo_10_change"] #5
+    - display_df["mongo_20_change"] #2
+)
+
+
+display_df["30change"] = (
+    display_df["mongo_20_change"]  #2
+    - display_df["mongo_30_change"] #1
+)
+
+
+
 # Rename columns
 display_df = display_df.rename(columns={
     "market_cap_rank": "Rank",
     "name": "Name",
     "symbol": "Symbol",
+    "10change":"10change",
+    "20change":"20change",
+    "30change":"30change",
     "price_change_percentage_1h_in_currency": "1h % (API)",
     "mongo_1h_change": "1h % (DB)",
     "Diff (API-DB)": "Diff 1h %",
@@ -422,9 +470,12 @@ display_df = display_df.rename(columns={
 
 # Apply styling
 styled_df = display_df.style.applymap(color_negative_red, subset=[
-    "1h % (API)", "1h % (DB)", "Diff 1h %", "24h (%)", "7d (%)", 
+    "10change","20change","30change","1h % (API)", "1h % (DB)", "Diff 1h %", "24h (%)", "7d (%)", 
     "14d (%)", "30d (%)", "Target %", "Stop Loss %"
 ]).format({
+    "10change": "{:.2f}%",
+    "20change": "{:.2f}%",
+    "30change": "{:.2f}%",
     "1h % (API)": "{:.2f}%",
     "1h % (DB)": "{:.2f}%",
     "Diff 1h %": "{:.2f}%",
@@ -437,7 +488,7 @@ styled_df = display_df.style.applymap(color_negative_red, subset=[
 })
 
 
-
+# "1h % (DB)", "Diff 1h %"
 
 # Display in Streamlit
 st.dataframe(
@@ -457,8 +508,7 @@ st.dataframe(
         )
     },
     column_order=(
-        "Rank", "Name", "Symbol", "1h % (API)", "1h % (DB)", "Diff 1h %",
-        "TradingView","24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
+        "Rank", "Name", "Symbol","10change","20change","30change","TradingView","1h % (API)","1h % (DB)", "Diff 1h %","24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
         "Price (₹)", "Target %", "Target (₹)", "Stop Loss %", 
         "Stop Loss (₹)", "Market Cap (₹)"
     )
@@ -566,7 +616,7 @@ with col2:
 risk_reward = (target_price - current_price) / (current_price - stop_loss_price)
 st.metric("Risk-Reward Ratio", f"{risk_reward:.2f}:1", 
           help="A ratio greater than 1:1 means potential reward outweighs potential risk")
-print("new")
+# print("new")
 # Show current price and recent performance
 st.markdown("### Current Coin Metrics")
 col1, col2, col3 = st.columns(3)
@@ -576,6 +626,6 @@ with col2:
     st.metric("1h Change", f"{coin_data['price_change_percentage_1h_in_currency']:.2f}%")
 with col3:
     st.metric("24h Change", f"{coin_data['price_change_percentage_24h_in_currency']:.2f}%")
-print("new chart")
+# print("new chart")
 # Add some space at the bottom
 st.markdown("<br><br>", unsafe_allow_html=True)
