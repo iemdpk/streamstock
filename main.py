@@ -566,7 +566,7 @@ with col2:
 risk_reward = (target_price - current_price) / (current_price - stop_loss_price)
 st.metric("Risk-Reward Ratio", f"{risk_reward:.2f}:1", 
           help="A ratio greater than 1:1 means potential reward outweighs potential risk")
-
+print("new")
 # Show current price and recent performance
 st.markdown("### Current Coin Metrics")
 col1, col2, col3 = st.columns(3)
