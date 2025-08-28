@@ -119,16 +119,22 @@ ETH,BTC,SOL,XRP,FARTCOIN,ENA,DOGE,PEPE,LINK,SUI,ADA,LTC,UNI,ARB,PENGU,AVAX,TRUMP
 df = load_data()
 mongo_df,previous_data = load_mongo_data()
 
-print("Ccoin one")
-print(len(previous_data[0]["coins"]));
-
 db0  = pd.DataFrame(previous_data[0]["coins"])
 db1  = pd.DataFrame(previous_data[1]["coins"])
 db2  = pd.DataFrame(previous_data[2]["coins"])
+db3  = pd.DataFrame(previous_data[3]["coins"])
+db4  = pd.DataFrame(previous_data[4]["coins"])
+db5  = pd.DataFrame(previous_data[5]["coins"])
+db6  = pd.DataFrame(previous_data[6]["coins"])
+
 
 db0.rename(columns={"price_change_percentage_1h_in_currency": "mongo_10_change"}, inplace=True)
 db1.rename(columns={"price_change_percentage_1h_in_currency": "mongo_20_change"}, inplace=True)
 db2.rename(columns={"price_change_percentage_1h_in_currency": "mongo_30_change"}, inplace=True)
+db3.rename(columns={"price_change_percentage_1h_in_currency": "mongo_40_change"}, inplace=True)
+db4.rename(columns={"price_change_percentage_1h_in_currency": "mongo_50_change"}, inplace=True)
+db5.rename(columns={"price_change_percentage_1h_in_currency": "mongo_60_change"}, inplace=True)
+db6.rename(columns={"price_change_percentage_1h_in_currency": "mongo_70_change"}, inplace=True)
 
 
 
@@ -155,8 +161,11 @@ df = df.merge(mongo_df, on="id", how="left")
 df = df.merge(db0[["id", "mongo_10_change"]], on="id", how="left")
 df = df.merge(db1[["id", "mongo_20_change"]], on="id", how="left")
 df = df.merge(db2[["id", "mongo_30_change"]], on="id", how="left")
+df = df.merge(db3[["id", "mongo_40_change"]], on="id", how="left")
+df = df.merge(db4[["id", "mongo_50_change"]], on="id", how="left")
+df = df.merge(db5[["id", "mongo_60_change"]], on="id", how="left")
+df = df.merge(db6[["id", "mongo_70_change"]], on="id", how="left")
 
-print(list(df.columns))
 
 # --- Market Sentiment (API vs MongoDB 1h) ---
 api_avg = df["price_change_percentage_1h_in_currency"].mean()
@@ -308,12 +317,10 @@ def apply_pct_filter(df, column, label):
         return df
     opt = st.sidebar.selectbox(f"{label} Price Change (%)", ["All", "Positive", "Negative"], key=column)
     if opt == "Positive":
-        print("it is show positive")
-        print(df[df[column] > 0].head(5))
+        
         return df[df[column] > 0]
     elif opt == "Negative":
-        print("it is show negative")
-        print(df[df[column] < 0].head(5))
+        
         return df[df[column] < 0]
     return df
 
@@ -323,6 +330,10 @@ filtered_df = apply_pct_filter(filtered_df, "mongo_1h_change", "1h mongo")
 filtered_df = apply_pct_filter(filtered_df, "mongo_10_change", "10 mongo")
 filtered_df = apply_pct_filter(filtered_df, "mongo_20_change", "20 mongo")
 filtered_df = apply_pct_filter(filtered_df, "mongo_30_change", "30 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_40_change", "40 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_50_change", "50 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_60_change", "60 mongo")
+filtered_df = apply_pct_filter(filtered_df, "mongo_70_change", "70 mongo")
 
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_24h_in_currency", "24h")
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_7d_in_currency", "7d")
@@ -348,7 +359,7 @@ filtered_df["target_pct"] = filtered_df["target_pct"].apply(lambda x: f"{x:.1f}%
 filtered_df["stop_loss_pct"] = filtered_df["stop_loss_pct"].apply(lambda x: f"{x:.1f}%")
 
 # Format %
-for col in ["price_change_percentage_1h_in_currency", "mongo_1h_change", "price_change_percentage_24h_in_currency","mongo_10_change","mongo_20_change","mongo_30_change"]:
+for col in ["price_change_percentage_1h_in_currency", "mongo_1h_change", "price_change_percentage_24h_in_currency","mongo_10_change","mongo_20_change","mongo_30_change","mongo_40_change","mongo_50_change","mongo_60_change","mongo_70_change"]:
     filtered_df[col] = filtered_df[col].apply(format_pct)
 
 # --- 24h Sentiment ---
@@ -398,7 +409,7 @@ def color_negative_red(val):
 # Create display dataframe with numeric values
 display_df = filtered_df[[
     "market_cap_rank", "name", "symbol",
-    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change",
+    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change","mongo_40_change","mongo_50_change","mongo_60_change","mongo_70_change",
     "TradingView",
     "price_change_percentage_24h_in_currency",
     "price_change_percentage_7d_in_currency",
@@ -415,7 +426,7 @@ display_df = filtered_df[[
 
 # Convert percentage columns to numeric
 for col in [
-    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change",
+    "price_change_percentage_1h_in_currency", "mongo_1h_change","mongo_10_change","mongo_20_change","mongo_30_change","mongo_40_change","mongo_50_change","mongo_60_change","mongo_70_change",
     "price_change_percentage_24h_in_currency",
     "price_change_percentage_7d_in_currency",
     "price_change_percentage_14d_in_currency",
@@ -424,6 +435,8 @@ for col in [
 ]:
     display_df[col] = display_df[col].apply(format_pct1)
 # Example: Add a new column 'Diff (API-DB)' = API 1h % - DB 1h %
+
+
 display_df["Diff (API-DB)"] = (
     display_df["price_change_percentage_1h_in_currency"] 
     - display_df["mongo_1h_change"]
@@ -446,6 +459,29 @@ display_df["30change"] = (
     - display_df["mongo_30_change"] #1
 )
 
+display_df["40change"] = (
+    display_df["mongo_30_change"]   # 10
+    - display_df["mongo_40_change"] #5
+)
+
+
+display_df["50change"] = (
+    display_df["mongo_40_change"] #5
+    - display_df["mongo_50_change"] #2
+)
+
+
+display_df["60change"] = (
+    display_df["mongo_50_change"]  #2
+    - display_df["mongo_60_change"] #1
+)
+
+
+display_df["70change"] = (
+    display_df["mongo_60_change"]  #2
+    - display_df["mongo_70_change"] #1
+)
+
 
 
 # Rename columns
@@ -456,6 +492,11 @@ display_df = display_df.rename(columns={
     "mongo_10_change":"10change1",
     "mongo_20_change":"20change1",
     "mongo_30_change":"30change1",
+    "mongo_40_change":"40change1",
+    "mongo_50_change":"50change1",
+    "mongo_60_change":"60change1",
+    "mongo_70_change":"70change1",
+
     "price_change_percentage_1h_in_currency": "1h % (API)",
     "mongo_1h_change": "1h % (DB)",
     "Diff (API-DB)": "Diff 1h %",
@@ -475,12 +516,16 @@ display_df = display_df.rename(columns={
 
 # Apply styling
 styled_df = display_df.style.applymap(color_negative_red, subset=[
-    "10change1","20change1","30change1","1h % (API)", "1h % (DB)", "Diff 1h %", "24h (%)", "7d (%)", 
+    "10change1","20change1","30change1","40change1","50change1","60change1","70change1","1h % (API)", "1h % (DB)", "Diff 1h %", "24h (%)", "7d (%)", 
     "14d (%)", "30d (%)", "Target %", "Stop Loss %"
 ]).format({
     "10change1": "{:.2f}%",
     "20change1": "{:.2f}%",
     "30change1": "{:.2f}%",
+    "40change1": "{:.2f}%",
+    "50change1": "{:.2f}%",
+    "60change1": "{:.2f}%",
+    "70change1": "{:.2f}%",
     "1h % (API)": "{:.2f}%",
     "1h % (DB)": "{:.2f}%",
     "Diff 1h %": "{:.2f}%",
@@ -513,7 +558,7 @@ st.dataframe(
         )
     },
     column_order=(
-        "Rank", "Name", "Symbol","10change1","20change1","30change1","TradingView","1h % (API)","1h % (DB)", "Diff 1h %","24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
+        "Rank", "Name", "Symbol","10change1","20change1","30change1","40change1","50change1","60change1","70change1","TradingView","1h % (API)","1h % (DB)", "Diff 1h %","24h (%)", "7d (%)", "14d (%)", "30d (%)", "Action",
         "Price (₹)", "Target %", "Target (₹)", "Stop Loss %", 
         "Stop Loss (₹)", "Market Cap (₹)"
     )
