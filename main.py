@@ -132,7 +132,7 @@ db2.rename(columns={"price_change_percentage_1h_in_currency": "mongo_30_change"}
 # https://s.tradingview.com/widgetembed/?symbol=BINANCE:{s.upper()}USDT&interval=1&theme=dark&timezone=Asia/Kolkata change to deep link rest things are same
 
 df["TradingView"] = df["symbol"].apply(
-    lambda s: f"https://www.tradingview.com/chart/?symbol={s.upper()}USDT&interval=1&theme=dark&timezone=Asia/Kolkata"
+    lambda s: f"https://www.tradingview.com/chart/?symbol={s.upper()}USDT&interval=15&theme=dark&timezone=Asia/Kolkata"
 )
 
 # print(df.head())
