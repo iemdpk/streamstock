@@ -198,6 +198,7 @@ st.sidebar.header("🔍 Filters")
 # Advanced Filters Section
 st.sidebar.subheader("Advanced Filters")
 
+
 # Volatility Filter
 volatility_option = st.sidebar.selectbox(
     "Volatility Level",
@@ -215,6 +216,10 @@ mcap_option = st.sidebar.selectbox(
     "Market Cap Size",
     ["All", "Small (<₹1,000Cr)", "Mid (₹1,000-10,000Cr)", "Large (>₹10,000Cr)"]
 )
+
+
+
+
 
 # Basic Filters Section
 st.sidebar.subheader("Basic Filters")
@@ -235,6 +240,8 @@ if price_max.strip():
         filtered_df = filtered_df[filtered_df["current_price"] <= float(price_max.replace(",", ""))]
     except:
         st.sidebar.error("❌ Invalid max price")
+
+
 
 
 
@@ -310,6 +317,16 @@ if compare_option == "API % > DB %":
 elif compare_option == "API % < DB %":
     filtered_df = filtered_df[filtered_df["price_change_percentage_1h_in_currency"] < filtered_df["mongo_1h_change"]]
 
+
+
+if st.sidebar.button("high level"):
+    symbols_to_match = """
+    ETC,BTC,SOL,XRP,ENA,SUI,ADA,PEPE,DOGE,AVAX,BONK,WIF,
+    ARB,LTC,SHIB,OP,TIA,BNB,INJ,ETHFI,ONDO,APT,TON,DOT,
+    GALA,FLOKI,LDO,BCH,ORDI,APE,AEVO
+""".replace("\n","").split(",")
+    filtered_df = filtered_df[filtered_df['symbol'].str.upper().isin(symbols_to_match)]
+    
 # --- % Change Filters ---
 def apply_pct_filter(df, column, label):
     if column not in df.columns:
@@ -323,6 +340,8 @@ def apply_pct_filter(df, column, label):
         
         return df[df[column] < 0]
     return df
+
+
 
 
 filtered_df = apply_pct_filter(filtered_df, "price_change_percentage_1h_in_currency", "1h")
