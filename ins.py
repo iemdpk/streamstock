@@ -398,6 +398,14 @@ st.markdown(f"### ⏳ 1h Sentiment: {hour_sentiment}")
 st.write(f"✅ Positive: {positive_count_1h} | ❌ Negative: {negative_count_1h}")
 
 
+# diff markup
+positive_count_1hdiff = ((filtered_df["price_change_percentage_1h_in_currency"] - filtered_df["mongo_1h_change"]) > 0).sum()
+negative_count_1hdiff = ((filtered_df["price_change_percentage_1h_in_currency"] - filtered_df["mongo_1h_change"]) < 0).sum()
+hour_sentimentdiff = "📈 Bullish" if positive_count_1hdiff > negative_count_1hdiff else "📉 Bearish"
+st.markdown(f"### ⏳ diff Sentiment: {hour_sentimentdiff}")
+st.write(f"✅ Positive: {positive_count_1hdiff} | ❌ Negative: {negative_count_1hdiff}")
+
+
 # --- Data Table ---
 st.subheader(f"📋 {len(filtered_df)} Coins")
 
