@@ -399,11 +399,19 @@ st.write(f"✅ Positive: {positive_count_1h} | ❌ Negative: {negative_count_1h}
 
 
 # diff markup
-positive_count_1hdiff = ((filtered_df["price_change_percentage_1h_in_currency"] - filtered_df["mongo_1h_change"]) > 0).sum()
-negative_count_1hdiff = ((filtered_df["price_change_percentage_1h_in_currency"] - filtered_df["mongo_1h_change"]) < 0).sum()
-hour_sentimentdiff = "📈 Bullish" if positive_count_1hdiff > negative_count_1hdiff else "📉 Bearish"
-st.markdown(f"### ⏳ diff Sentiment: {hour_sentimentdiff}")
-st.write(f"✅ Positive: {positive_count_1hdiff} | ❌ Negative: {negative_count_1hdiff}")
+cols = ["mongo_10_change", "mongo_20_change", "mongo_30_change"]
+
+# Calculate total positives and negatives across all three columns
+total_positive = sum((filtered_df[col] > 0).sum() for col in cols)
+total_negative = sum((filtered_df[col] < 0).sum() for col in cols)
+
+# Determine overall sentiment
+overall_sentiment = "📈 Bullish" if total_positive > total_negative else "📉 Bearish"
+
+# Display in Streamlit
+st.markdown(f"### 📊 Overall Sentiment: {overall_sentiment}")
+st.write(f"✅ Total Positive: {total_positive} | ❌ Total Negative: {total_negative}")
+
 
 
 # --- Data Table ---
