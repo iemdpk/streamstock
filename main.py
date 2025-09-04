@@ -399,7 +399,7 @@ st.write(f"✅ Positive: {positive_count_1h} | ❌ Negative: {negative_count_1h}
 
 
 # diff markup
-cols = ["mongo_10_change", "mongo_20_change", "mongo_30_change"]
+cols = ["mongo_10_change", "mongo_20_change", "mongo_30_change","mongo_40_change","mongo_50_change"]
 
 # Calculate total positives and negatives across all three columns
 total_positive = sum((filtered_df[col] > 0).sum() for col in cols)
