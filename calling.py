@@ -98,28 +98,28 @@ def main():
     db0  = pd.DataFrame(previous_data[0]["coins"])
     db1  = pd.DataFrame(previous_data[1]["coins"])
     db2  = pd.DataFrame(previous_data[2]["coins"])
-    # db3  = pd.DataFrame(previous_data[3]["coins"])
-    # db4  = pd.DataFrame(previous_data[4]["coins"])
+    db3  = pd.DataFrame(previous_data[3]["coins"])
+    db4  = pd.DataFrame(previous_data[4]["coins"])
     # db5  = pd.DataFrame(previous_data[5]["coins"])
     # db6  = pd.DataFrame(previous_data[6]["coins"])
 
     db0.rename(columns={"price_change_percentage_1h_in_currency": "mongo_10_change"}, inplace=True)
     db1.rename(columns={"price_change_percentage_1h_in_currency": "mongo_20_change"}, inplace=True)
     db2.rename(columns={"price_change_percentage_1h_in_currency": "mongo_30_change"}, inplace=True)
-    # db3.rename (columns={"price_change_percentage_1h_in_currency": "mongo_40_change"}, inplace=True)
-    # db4.rename(columns={"price_change_percentage_1h_in_currency": "mongo_50_change"}, inplace=True)
+    db3.rename (columns={"price_change_percentage_1h_in_currency": "mongo_40_change"}, inplace=True)
+    db4.rename(columns={"price_change_percentage_1h_in_currency": "mongo_50_change"}, inplace=True)
     # db5.rename(columns={"price_change_percentage_1h_in_currency": "mongo_60_change"}, inplace=True)
     # db6.rename(columns={"price_change_percentage_1h_in_currency": "mongo_70_change"}, inplace=True)
 
     df = df.merge(db0[["id", "mongo_10_change"]], on="id", how="left")
     df = df.merge(db1[["id", "mongo_20_change"]], on="id", how="left")
     df = df.merge(db2[["id", "mongo_30_change"]], on="id", how="left")
-    # df = df.merge(db3[["id", "mongo_40_change"]], on="id", how="left")
-    # df = df.merge(db4[["id", "mongo_50_change"]], on="id", how="left")
+    df = df.merge(db3[["id", "mongo_40_change"]], on="id", how="left")
+    df = df.merge(db4[["id", "mongo_50_change"]], on="id", how="left")
     # df = df.merge(db5[["id", "mongo_60_change"]], on="id", how="left")
     # df = df.merge(db6[["id", "mongo_70_change"]], on="id", how="left")
 
-    cols = ["mongo_10_change", "mongo_20_change", "mongo_30_change"]
+    cols = ["mongo_10_change", "mongo_20_change", "mongo_30_change","mongo_40_change","mongo_50_change"]
     # Determine overall sentiment
     total_positive = sum((df[col] > 0).sum() for col in cols)
     total_negative = sum((df[col] < 0).sum() for col in cols)
